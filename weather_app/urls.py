@@ -11,4 +11,5 @@ urlpatterns = [
     path('api/subscription/', MySubscriptionView.as_view(), name='subscription'),
     path('api/subscription/cities/', MyCitiesListView.as_view(), name='cities'),
     path('api/subscription/cities/<pk>/', OneCityView.as_view(), name='one_city'),
+    path('api/get_weather/', GetWeatherView.as_view(), name='get_weather'),
 ]

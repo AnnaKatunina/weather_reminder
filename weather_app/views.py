@@ -15,11 +15,12 @@ from rest_framework.views import APIView
 
 from weather_app.forms import RegisterForm
 from weather_app.models import Subscription, CityInSubscription
+from weather_app.send_email import send_email, get_weather
 from weather_app.serializers import SubscriptionSerializer, CityInSubscriptionSerializer
 
 
 def check_existing_city(city_name):
-    url = f'http://api.openweathermap.org/data/2.5/weather?q={city_name}&appid={config("open_weather_api_key")}'
+    url = f'http://api.openweathermap.org/data/2.5/weather?q={city_name}&appid={config("weather_api_key")}'
     r = requests.get(url)
     return r.status_code != 200
 
@@ -98,7 +99,7 @@ class MyCitiesListView(ListCreateAPIView):
         subscription = Subscription.objects.get(user=request.user.id)
         new_city = CityInSubscription.objects.create(
             subscription=subscription,
-            name=request.data['name']
+            name=input_city,
         )
         new_city.save()
         serializer = CityInSubscriptionSerializer(new_city)
@@ -110,3 +111,13 @@ class OneCityView(RetrieveDestroyAPIView):
 
     def get_queryset(self):
         return CityInSubscription.objects.filter(subscription__user=self.request.user.id)
+
+
+class GetWeatherView(APIView):
+
+    def get(self, request):
+        cities = CityInSubscription.objects.filter(subscription__user=request.user.id)
+        response_get_weather = []
+        for city in cities:
+             response_get_weather.append(get_weather(city.name))
+        return Response(response_get_weather)
