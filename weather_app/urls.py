@@ -1,7 +1,7 @@
 from django.urls import path
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
-from weather_app.views import *
+from weather_app.views import MainView, RegisterView, MySubscriptionView, MyCitiesListView, OneCityView, GetWeatherView
 
 urlpatterns = [
     path('', MainView.as_view(), name='main'),

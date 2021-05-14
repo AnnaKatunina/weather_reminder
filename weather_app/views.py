@@ -15,7 +15,7 @@ from rest_framework.views import APIView
 
 from weather_app.forms import RegisterForm
 from weather_app.models import Subscription, CityInSubscription
-from weather_app.send_email import send_email, get_weather
+from weather_app.tasks import get_weather, send_email_task
 from weather_app.serializers import SubscriptionSerializer, CityInSubscriptionSerializer
 
 
@@ -117,7 +117,9 @@ class GetWeatherView(APIView):
 
     def get(self, request):
         cities = CityInSubscription.objects.filter(subscription__user=request.user.id)
+        sub = Subscription.objects.filter(user=request.user.id).first()
         response_get_weather = []
         for city in cities:
-             response_get_weather.append(get_weather(city.name))
+            response_get_weather.append(get_weather(city.name))
+        send_email_task(sub.id)
         return Response(response_get_weather)
