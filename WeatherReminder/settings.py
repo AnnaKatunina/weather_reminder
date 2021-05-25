@@ -148,8 +148,13 @@ AUTH_USER_MODEL = 'weather_app.User'
 API_KEY_CUSTOM_HEADER = "HTTP_API_SECRET_KEY"
 HTTP_API_SECRET_KEY = config('my_service_api_key')
 
+OPEN_WEATHER_API_URL = 'http://api.openweathermap.org/data/2.5/weather'
+
 # celery
-CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_BROKER_URL = 'redis://redis:6379/0'
+CELERY_RESULT_BACKEND = 'redis://redis:6379/0'
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'

@@ -1,7 +1,10 @@
+import json
+
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
-from django_celery_beat.models import PeriodicTask
+from django.utils import timezone
+from django_celery_beat.models import PeriodicTask, IntervalSchedule
 
 
 class User(AbstractUser):
@@ -26,7 +29,6 @@ class Subscription(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     period_notifications = models.IntegerField(choices=Period.choices)
     date_of_subscription = models.DateTimeField(auto_now_add=True)
-    task = models.OneToOneField(PeriodicTask, on_delete=models.CASCADE, null=True, blank=True)
 
     def __str__(self):
         return f'{self.user} has a subscription since {self.date_of_subscription} ' \
@@ -39,3 +41,33 @@ class CityInSubscription(models.Model):
 
     def __str__(self):
         return f'{self.name}'
+
+
+def create_task(subscription):
+    schedule, created = IntervalSchedule.objects.get_or_create(
+        every=subscription.period_notifications,
+        period=IntervalSchedule.HOURS
+    )
+    task = PeriodicTask.objects.create(
+        name=f'Send email to {subscription.user.email}',
+        task='send_email_task',
+        interval=schedule,
+        args=json.dumps([subscription.id]),
+        start_time=timezone.now()
+    )
+    task.save()
+    return
+
+
+def edit_task(subscription):
+    task = PeriodicTask.objects.filter(name=f'Send email to {subscription.user.email}').first()
+    task.interval.every = subscription.period_notifications
+    task.interval.save()
+    task.save()
+    return
+
+
+def delete_task(subscription):
+    task = PeriodicTask.objects.filter(name=f'Send email to {subscription.user.email}').first()
+    task.delete()
+    return

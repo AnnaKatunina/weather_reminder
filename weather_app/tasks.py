@@ -5,11 +5,12 @@ from decouple import config
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 
+from WeatherReminder.settings import OPEN_WEATHER_API_URL
 from weather_app.models import Subscription, CityInSubscription
 
 
 def get_weather(city_name):
-    url = f'http://api.openweathermap.org/data/2.5/weather?q={city_name}&units=metric&appid={config("weather_api_key")}'
+    url = OPEN_WEATHER_API_URL + f'?q={city_name}&units=metric&appid={config("weather_api_key")}'
     data = requests.get(url).json()
     weather_data = {
         'city': data['name'],

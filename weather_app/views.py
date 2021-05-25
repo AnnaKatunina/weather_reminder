@@ -13,14 +13,15 @@ from rest_framework.generics import ListCreateAPIView, RetrieveDestroyAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from WeatherReminder.settings import OPEN_WEATHER_API_URL
 from weather_app.forms import RegisterForm
-from weather_app.models import Subscription, CityInSubscription
-from weather_app.tasks import get_weather, send_email_task
+from weather_app.models import Subscription, CityInSubscription, create_task, delete_task, edit_task
+from weather_app.tasks import get_weather
 from weather_app.serializers import SubscriptionSerializer, CityInSubscriptionSerializer
 
 
 def check_existing_city(city_name):
-    url = f'http://api.openweathermap.org/data/2.5/weather?q={city_name}&appid={config("weather_api_key")}'
+    url = OPEN_WEATHER_API_URL + f'?q={city_name}&appid={config("weather_api_key")}'
     r = requests.get(url)
     return r.status_code != 200
 
@@ -67,6 +68,7 @@ class MySubscriptionView(APIView):
             period_notifications=request.data["period_notifications"]
         )
         new_subscription.save()
+        create_task(new_subscription)
         serializer = SubscriptionSerializer(new_subscription)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
@@ -74,11 +76,13 @@ class MySubscriptionView(APIView):
         subscription = Subscription.objects.get(user=request.user.id)
         subscription.period_notifications = request.data["period_notifications"]
         subscription.save()
+        edit_task(subscription)
         serializer = SubscriptionSerializer(subscription)
         return Response(serializer.data)
 
     def delete(self, request):
         subscription = Subscription.objects.get(user=request.user.id)
+        delete_task(subscription)
         subscription.delete()
         return Response("Subscription has been deleted")
 
@@ -117,9 +121,7 @@ class GetWeatherView(APIView):
 
     def get(self, request):
         cities = CityInSubscription.objects.filter(subscription__user=request.user.id)
-        sub = Subscription.objects.filter(user=request.user.id).first()
         response_get_weather = []
         for city in cities:
             response_get_weather.append(get_weather(city.name))
-        send_email_task(sub.id)
         return Response(response_get_weather)

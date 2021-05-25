@@ -1,6 +1,8 @@
 FROM python:3.8-alpine
+
 ENV PYTHONDONTWRITEBITECODE 1
 ENV PYTHONUNBUFFERED 1
+
 WORKDIR /usr/src/app
 
 RUN apk update && apk add build-base postgresql-dev gcc jpeg-dev zlib-dev freetype-dev gettext

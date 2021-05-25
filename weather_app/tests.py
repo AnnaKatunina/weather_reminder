@@ -6,13 +6,13 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from weather_app.models import User, Subscription, CityInSubscription
+from weather_app.tasks import send_email_task
 
 
 class MySubscriptionTestCase(APITestCase):
     def setUp(self):
         self.user = User.objects.create(email='test@test.com', password='test_password')
         self.subscription = Subscription.objects.create(user=self.user, period_notifications=3)
-        # self.headers = {'Api-Secret-Key': config('my_service_api_key')}
 
     @classmethod
     def setUpTestData(cls):
@@ -30,8 +30,9 @@ class MySubscriptionTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data, {'user_email': 'test@test.com', 'period_notifications': 3, 'cities': []})
 
+    @patch('weather_app.views.edit_task')
     @patch('rest_framework_api_key.permissions.HasAPIKey.has_permission')
-    def test_change_subscription(self, mock_has_permission):
+    def test_change_subscription(self, mock_has_permission, mock_edit_task):
         data_subscription = {
             'period_notifications': 6,
         }
@@ -40,8 +41,9 @@ class MySubscriptionTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data, {'user_email': 'test@test.com', 'period_notifications': 6, 'cities': []})
 
+    @patch('weather_app.views.delete_task')
     @patch('rest_framework_api_key.permissions.HasAPIKey.has_permission')
-    def test_delete_subscription(self, mock_has_permission):
+    def test_delete_subscription(self, mock_has_permission, mock_delete_task):
         self.client.force_authenticate(self.user)
         response = self.client.delete(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -184,3 +186,26 @@ class ViewTestCase(TestCase):
         response = self.client.get(reverse('register'))
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'register.html')
+
+
+class TaskTestCase(TestCase):
+
+    def setUp(self):
+        self.user_1 = User.objects.create(email='test_1@test.com', password='test_password')
+        self.user_2 = User.objects.create(email='test_2@test.com', password='test_password')
+        self.subscription_1 = Subscription.objects.create(user=self.user_1, period_notifications=3)
+        self.subscription_2 = Subscription.objects.create(user=self.user_2, period_notifications=3)
+        self.city_1 = CityInSubscription.objects.create(subscription=self.subscription_1, name='Moscow')
+        self.city_2 = CityInSubscription.objects.create(subscription=self.subscription_1, name='Berlin')
+
+    @patch('weather_app.tasks.get_weather')
+    def test_called_send_mail(self, mock_get_weather):
+        sub_id = self.subscription_1.id
+        send_email_task(sub_id)
+        self.assertEqual(mock_get_weather.call_count, 2)
+
+    @patch('weather_app.tasks.get_weather')
+    def test_uncalled_send_mail(self, mock_get_weather):
+        sub_id = self.subscription_2.id
+        send_email_task(sub_id)
+        self.assertEqual(mock_get_weather.call_count, 0)
