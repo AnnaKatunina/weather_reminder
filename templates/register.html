@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+
+{% block container %}
+
+{% load crispy_forms_tags %}
+
+<main class="container">
+  <div class="row">
+    <div class="col-8 col-lg-4 offset-2 offset-lg-4">
+
+      <form method="post" class="form-signin pt-5" enctype="multipart/form-data">{% csrf_token %}
+        <div class="text-center mt-5 b-1">
+            <h1 class="h3 mb-3 font-weight-normal">Weather Reminder</h1>
+            <br>
+        </div>
+
+        {% crispy form "bootstrap4" %}
+
+
+      </form>
+
+      <div class="mt-4 text-center"><p>Do you have an account? <a href="/login">Sign in!</a></p></div>
+    </div>
+  </div>
+</main>
+
+{% endblock %}

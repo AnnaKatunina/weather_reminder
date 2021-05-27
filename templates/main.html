@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+
+{% block container %}
+
+<main class="container ">
+    <div class="text-center m-5">
+        <p>Hello!</p>
+        <p>Use API Key</p>
+        <div class="alert alert-info mx-5" role="alert">
+            {{ api_key }}
+        </div>
+    </div>
+</main>
+
+{% endblock %}
